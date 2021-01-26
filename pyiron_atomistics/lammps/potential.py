@@ -14,7 +14,7 @@ from pyiron_atomistics.atomistics.job.potentials import PotentialAbstract, find_
 
 __author__ = "Joerg Neugebauer, Sudarsan Surendralal, Jan Janssen"
 __copyright__ = (
-    "Copyright 2020, Max-Planck-Institut für Eisenforschung GmbH - "
+    "Copyright 2021, Max-Planck-Institut für Eisenforschung GmbH - "
     "Computational Materials Design (CM) Department"
 )
 __version__ = "1.0"
@@ -406,13 +406,14 @@ class LammpsPotential(GenericParameters):
                     element_symbol)
             raise NameError(msg) from None
 
+
     def to_hdf(self, hdf, group_name=None):
         if self._df is not None:
             with hdf.open("potential") as hdf_pot:
                 hdf_pot["Config"] = self._df["Config"].values[0]
                 hdf_pot["Filename"] = self._df["Filename"].values[0]
                 hdf_pot["Name"] = self._df["Name"].values[0]
-                hdf_pot["Model"] = self._df["Model"].values[0]  
+                hdf_pot["Model"] = self._df["Model"].values[0]
                 hdf_pot["Species"] = self._df["Species"].values[0]
                 if "Citations" in self._df.columns.values:
                     hdf_pot["Citations"] = self._df["Citations"].values[0]
@@ -434,11 +435,12 @@ class LammpsPotential(GenericParameters):
             except ValueError:
                 pass
         super(LammpsPotential, self).from_hdf(hdf, group_name=group_name)
+
+
 class LammpsPotentialFile(PotentialAbstract):
     """
     The Potential class is derived from the PotentialAbstract class, but instead of loading the potentials from a list,
     the potentials are loaded from a file.
-
     Args:
         potential_df:
         default_df:
@@ -504,16 +506,18 @@ class LammpsPotentialFile(PotentialAbstract):
 
 class PotentialAvailable(object):
     def __init__(self, list_of_potentials):
-        self._list_of_potentials = list_of_potentials
+        self._list_of_potentials = {
+            "pot_" + v.replace("-", "_").replace('.', '_'): v for v in list_of_potentials
+        }
 
     def __getattr__(self, name):
-        if name in self._list_of_potentials:
-            return name
+        if name in self._list_of_potentials.keys():
+            return self._list_of_potentials[name]
         else:
             raise AttributeError
 
     def __dir__(self):
-        return self._list_of_potentials
+        return list(self._list_of_potentials.keys())
 
     def __repr__(self):
         return str(dir(self))
