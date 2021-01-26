@@ -152,7 +152,7 @@ class LammpsPotential(GenericParameters):
     def _elements_in_eam(self):
         if self._keys_eam is None or len(self._keys_eam[0]) <= 1:
             raise ValueError("EAM parsing not performed")
-        return [self[k] for k in self._keys_eam[0][1:]]
+        return [self.input.pot[k] for k in self._keys_eam[0][1:]]
 
     @property
     def eam_element_comb(self):
@@ -195,28 +195,21 @@ class LammpsPotential(GenericParameters):
                            'dr' + self._eam_ending, 'cutoff' + self._eam_ending]]        
         self._keys_eam[0].extend(['Element_eam_' + str(i + 1) for i in range(len(self._file_eam[3].split()) - 1)])        
         for i in range(2):
-            for k, v in zip(self._keys_eam[i], self._file_eam[i + 3].split()):                
-                self[k] = v                
+            for k, v in zip(self._keys_eam[i], self._file_eam[i + 3].split()):                 
                 self.input.pot[k] = v
         for k in ['Nrho' + self._eam_ending, 'Nr' + self._eam_ending]:
-            self[k] = int(self[k])
-            self.input.pot[k] = int(self[k])
+            self.input.pot[k] = int(self.input.pot[k])
         for k in ['drho' + self._eam_ending, 'dr' + self._eam_ending, 'cutoff' + self._eam_ending]:            
-            self[k] = float(self[k])
-            self.input.pot[k] = float(self[k])
+            self.input.pot[k] = float(self.input.pot[k])
         self._elem_props=['atomic_number'+self._eam_ending, 'mass'+self._eam_ending, 'lattice_constant'+self._eam_ending, 'lattice_type'+self._eam_ending]
         [self.input.pot.create_group(str(prop)) for prop in self._elem_props]
-        #self._elem_pr ps = ['atomic_number' + self._eam_ending, 'mass' + self._eam_ending]
-        self['meaningless_item'] = None
         property_lines = list(filter(lambda a: self._has_non_number(a.split()), self._file_eam[5:]))
         if len(self._elements_in_eam) != len(property_lines):
             warnings.warn('EAM parsing might have failed; number of elements defined (' + str(
                 len(self._elements_in_eam)) + ') != number of element property lines (' + str(
-                len(property_lines)) + ')')        
+                len(property_lines)) + ')')
         for i_elem, elem in enumerate(self._elements_in_eam):            
-            for i_prop, prop in enumerate(self._elem_props):
-                self[str(prop) + '/' + str(elem) + '-' + (elem)] = property_lines[i_elem].split()[i_prop]                
-                #self.input.pot.create_group(str(prop))                
+            for i_prop, prop in enumerate(self._elem_props):               
                 self.input.pot[str(prop) + '/' + str(elem) + '-' + (elem)] = property_lines[i_elem].split()[i_prop]
         tab_lines = list(filter(lambda a: self._has_non_number(a.split()) == False, self._file_eam[5:]))
         tab_lines = ''.join(tab_lines).replace('\n', ' ').split()        
@@ -225,30 +218,23 @@ class LammpsPotential(GenericParameters):
         self.input.pot.create_group('rho')
         self.input.pot.create_group('phi')
         for elem in self._elements_in_eam:            
-            self['F' + self._eam_ending + '/' + elem + '-' + elem] = [float(value) for value in tab_lines[                                                                                                start_line:start_line +
-                                                                                                           self[                                                                                    'Nrho' + self._eam_ending]]]
-            self.input.pot['F' + self._eam_ending + '/' + elem + '-' + elem] = [float(value) for value in tab_lines[
-                                                                                                start_line:start_line +                                                                                                           self[
-                                                                                                               'Nrho' + self._eam_ending]]]
-            start_line += self['Nrho' + self._eam_ending]
-            if self._model_mb == ['eam/fs'] and self['No_Elements']>1:
-                rho_Nr = self['Nrho'+self._eam_ending]*2
+            self.input.pot['F' + self._eam_ending + '/' + elem + '-' + elem] = [float(value) for value in tab_lines[start_line:start_line + self.input.pot['Nrho' + self._eam_ending]]]
+            start_line += self.input.pot['Nrho' + self._eam_ending]
+            if self._model_mb == ['eam/fs'] and self.input.pot['No_Elements']>1:
+                rho_Nr = self.input.pot['Nrho'+self._eam_ending]*2
             else:
-                rho_Nr = self['Nrho' + self._eam_ending]
-            self['rho' + self._eam_ending + '/' + elem + '-' + elem] = [float(value) for value in
+                rho_Nr = self.input.pot['Nrho' + self._eam_ending]
+            self.input.pot['rho' + self._eam_ending + '/' + elem + '-' + elem] = [float(value) for value in
                                                                         tab_lines[start_line:start_line + rho_Nr]]
             self.input.pot['rho' + self._eam_ending + '/' + elem + '-' + elem] = [float(value) for value in
                                                                         tab_lines[start_line:start_line + rho_Nr]]            
             start_line += rho_Nr
-        for i in range(self['No_Elements' + self._eam_ending]):
+        for i in range(int(self.input.pot['No_Elements' + self._eam_ending])):
             for j in range(i + 1):
-                self['phi' + self._eam_ending + '/' + self._elements_in_eam[j] + '-' + self._elements_in_eam[i]] = [
-                    float(value) for value in tab_lines[start_line:start_line + self['Nr' + self._eam_ending]]]
                 self.input.pot['phi' + self._eam_ending + '/' + self._elements_in_eam[j] + '-' + self._elements_in_eam[i]] = [
-                    float(value) for value in tab_lines[start_line:start_line + self['Nr' + self._eam_ending]]]
-                start_line += self['Nr' + self._eam_ending]
-       # print(self.input.pot.phi())
-        if len(self._keys_eam[0]) != self['No_Elements' + self._eam_ending] + 1:
+                    float(value) for value in tab_lines[start_line:start_line + self.input.pot['Nr' + self._eam_ending]]]
+                start_line += self.input.pot['Nr' + self._eam_ending]
+        if len(self._keys_eam[0]) != int(self.input.pot['No_Elements' + self._eam_ending]) + 1:
             print('WARNING: Number of elements is not consistent in EAM File')
         self._value_modified = {k: False for k in self.get_pandas()['Parameter']}
         self._eam_parsing_successful = True
