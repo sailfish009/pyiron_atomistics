@@ -47,13 +47,13 @@ class LammpsPotential(GenericParameters):
 
     @property
     def df(self):
-        try:
-            self._df["Filename"].values[0]
-            self.parameters
-            return self.input.pot
-        except:
-            self.parameters
-            return self._df
+        #try:
+        #self._df["Filename"].values[0]
+        #self.parameters
+        #return self.input.pot
+        #except:
+        self.parameters
+        return self._df
 
     @df.setter
     def df(self, new_dataframe):
@@ -66,6 +66,16 @@ class LammpsPotential(GenericParameters):
                 "Potential not found! "
                 "Validate the potential name by self.potential in self.list_potentials()."
             )
+    
+    @property
+    def potential_parameters(self):
+        try:
+            self._df["Filename"].values[0]
+            self.parameters
+            return self.input.pot
+        except:
+            print('Parmeter identification initialization not successfull')
+    
     @property
     def parameters(self):
         if self._file_eam is None:
